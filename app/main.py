@@ -8,6 +8,7 @@ nltk.download('vader_lexicon')
 app = FastAPI()
 
 # Setup templates and static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 sid = SentimentIntensityAnalyzer()
