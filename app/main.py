@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -7,9 +8,12 @@ import nltk
 nltk.download('vader_lexicon')
 app = FastAPI()
 
-# Setup templates and static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# Get the directory of the current script
+current_dir = os.path.dirname(os.path.abspath(__file__))
+templates_dir = os.path.join(current_dir, "templates")
+
+# Setup templates and static files with absolute paths
+templates = Jinja2Templates(directory=templates_dir)
 
 sid = SentimentIntensityAnalyzer()
 
