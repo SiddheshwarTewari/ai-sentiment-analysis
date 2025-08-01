@@ -2,6 +2,6 @@
   "name": "cinesense-ai",
   "version": "1.0.0",
   "dependencies": {
-    "happy-transformer": "^2.4.1"
+    "sentiment": "^5.0.2"
   }
 }
