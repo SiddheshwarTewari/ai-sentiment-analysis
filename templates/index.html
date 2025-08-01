@@ -156,24 +156,46 @@
 
 
         document.querySelector('form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const review = document.getElementById('review').value;
-            
-            try {
-                const response = await fetch('/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ review })
-                });
-                
-                const result = await response.json();
-                // Store result in localStorage and redirect
-                localStorage.setItem('analysisResult', JSON.stringify(result));
-                window.location.href = '/result.html';
-            } catch (error) {
-                alert('Analysis failed: ' + error.message);
-            }
+        e.preventDefault();
+        const reviewText = document.getElementById('review').value.trim();
+        
+        if (!reviewText) {
+            alert('Please enter a review before analyzing');
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = document.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyzing...';
+
+        try {
+            const response = await fetch('/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ review: reviewText })
             });
+
+            if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Server returned an error');
+            }
+
+            const result = await response.json();
+            
+            // Store result and redirect
+            localStorage.setItem('analysisResult', JSON.stringify(result));
+            window.location.href = '/result.html';
+
+        } catch (error) {
+            console.error('Analysis failed:', error);
+            alert(`Analysis failed: ${error.message}`);
+        } finally {
+            // Reset button state
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-robot me-2"></i>Analyze';
+        }
+        });
     </script>
 </body>
 </html>

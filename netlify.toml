@@ -2,3 +2,13 @@
   command = "npm install && echo 'Dependencies installed'"
   publish = "templates"
   functions = "functions"
+
+[[redirects]]
+  from = "/analyze"
+  to = "/.netlify/functions/analyze"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
