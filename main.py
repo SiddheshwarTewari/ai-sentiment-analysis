@@ -1,19 +1,15 @@
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
-from transformers import pipeline
+from happytransformer import HappyTextClassification
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Load lightweight model (will download on first run)
-try:
-    sentiment_analyzer = pipeline(
-        "sentiment-analysis",
-        model="distilbert-base-uncased-finetuned-sst-2-english"
-    )
-except Exception as e:
-    print(f"Model loading error: {e}")
-    sentiment_analyzer = None
+# Initialize lightweight model (~150MB)
+model = HappyTextClassification(
+    model_type="DISTILBERT",
+    model_name="distilbert-base-uncased-finetuned-sst-2-english"
+)
 
 @app.get("/")
 async def home(request: Request):
@@ -21,14 +17,11 @@ async def home(request: Request):
 
 @app.post("/analyze")
 async def analyze(request: Request, review: str = Form(...)):
-    if not sentiment_analyzer:
-        return {"error": "Model not loaded"}, 503
-    
-    result = sentiment_analyzer(review)[0]
-    score = result['score'] * (1 if result['label'] == 'POSITIVE' else -1)
+    result = model.classify_text(review)
+    score = result.score * (1 if result.label == "POSITIVE" else -1)
     return templates.TemplateResponse("result.html", {
         "request": request,
         "review": review,
-        "sentiment": "Positive" if score > 0 else "Negative",
+        "sentiment": result.label.title(),
         "score": round(score, 2)
     })
