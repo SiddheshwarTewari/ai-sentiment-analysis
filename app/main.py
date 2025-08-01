@@ -11,10 +11,8 @@ app = FastAPI()
 # Get the directory of the current script
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates_dir = os.path.join(current_dir, "templates")
-static_dir = os.path.join(current_dir, "static")
 
 # Setup templates and static files with absolute paths
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
 
 # Initialize sentiment analyzer with adjusted thresholds
