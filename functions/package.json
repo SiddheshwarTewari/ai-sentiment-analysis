@@ -1,0 +1,7 @@
+{
+  "name": "netlify-functions",
+  "version": "1.0.0",
+  "dependencies": {
+    "happy-transformer": "^2.4.1"
+  }
+}
