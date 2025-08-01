@@ -2,67 +2,48 @@ import os
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from transformers import pipeline
-import torch
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import nltk
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Load lightweight models
-sentiment_analyzer = pipeline(
-    "sentiment-analysis",
-    model="distilbert-base-uncased-finetuned-sst-2-english",
-    device=-1  # Use CPU
-)
+# Tiny VADER lexicon (custom optimized)
+nltk.download('vader_lexicon')
+sid = SentimentIntensityAnalyzer()
 
+# Micro-optimized analysis
 def analyze_review(text):
-    try:
-        # 1. Base sentiment (lightweight AI)
-        result = sentiment_analyzer(text)[0]
-        score = result['score'] * (1 if result['label'] == 'POSITIVE' else -1)
-        
-        # 2. Simple aspect detection
-        aspects = {
-            'dialogue': 0.15,
-            'character': 0.2,
-            'plot': 0.15,
-            'animation': 0.1,
-            'cinematography': 0.1
-        }
-        aspect_boost = sum(
-            weight for word, weight in aspects.items() 
-            if word in text.lower()
-        )
-        
-        # 3. Emotion indicators
-        emotion_words = {
-            'happy': 0.3, 'joy': 0.3, 'love': 0.3,
-            'angry': -0.3, 'boring': -0.4, 'disappoint': -0.3
-        }
-        emotion_boost = sum(
-            weight for word, weight in emotion_words.items()
-            if word in text.lower()
-        )
-        
-        # Combine scores (-1 to 1 scale)
-        final_score = (
-            score * 0.7 + 
-            min(0.3, aspect_boost) * 0.2 + 
-            emotion_boost * 0.1
-        )
-        
-        # Convert to -3 to 3 scale
-        scaled_score = final_score * 3
-        
-        if scaled_score > 1.0:
-            return "Positive", round(scaled_score, 2)
-        elif scaled_score < -1.0:
-            return "Negative", round(scaled_score, 2)
-        else:
-            return "Neutral", 0.0
-            
-    except Exception as e:
-        print(f"Analysis error: {e}")
+    # 1. Base sentiment (lightweight)
+    scores = sid.polarity_scores(text)
+    
+    # 2. Aspect boosters
+    aspects = {
+        'dialogue': 0.3, 'character': 0.3, 
+        'plot': 0.2, 'animation': 0.2
+    }
+    aspect_boost = sum(
+        weight for word, weight in aspects.items() 
+        if word in text.lower()
+    ) / 2
+    
+    # 3. Emotion triggers
+    emotions = {
+        'love': 0.4, 'hate': -0.4, 'happy': 0.3,
+        'boring': -0.3, 'fantastic': 0.5, 'terrible': -0.5
+    }
+    emotion_boost = sum(
+        weight for word, weight in emotions.items()
+        if word in text.lower()
+    ) / 3
+    
+    final_score = (scores['compound'] + aspect_boost + emotion_boost) * 2.5
+    
+    if final_score > 1.0:
+        return "Positive", round(final_score, 2)
+    elif final_score < -1.0:
+        return "Negative", round(final_score, 2)
+    else:
         return "Neutral", 0.0
 
 @app.get("/")
