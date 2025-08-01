@@ -55,10 +55,14 @@ def analyze_movie_review(text):
     
     # Detect comparative statements
     for pattern, boost in COMPARATIVE_PHRASES.items():
-        if re.search(pattern.replace('*', '.*'), text_lower):
+        if re.search(r'\b' + pattern.replace('*', r'\w+') + r'\b', text_lower):
             comparative_boost *= boost
-        if 'than' in text_lower and not 'better than' in text_lower:
-            comparative_boost *= 0.9  # Slightly reduce for neutral comparisons
+
+    # Handle neutral comparisons with "than"
+    if ' than ' in f' {text_lower} ' and not any(
+        phrase in text_lower for phrase in ['better than', 'worse than', 'best than']
+    ):
+        comparative_boost *= 0.9  # Slightly reduce for neutral comparisons
     
     # Analyze each word in context
     i = 0
