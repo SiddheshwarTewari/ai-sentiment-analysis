@@ -220,6 +220,28 @@
                 }
             });
         }
+
+
+        // Get results from localStorage
+        const result = JSON.parse(localStorage.getItem('analysisResult'));
+
+        if (result) {
+        // Update the DOM with results
+        document.querySelector('.review-text p').textContent = result.review;
+        document.querySelector('.sentiment-display h2').textContent = result.sentiment;
+        document.querySelector('.sentiment-display h1').textContent = result.score.toFixed(1);
+        
+        // Update meter pointer
+        const percentage = ((result.score + 3) / 6 * 100);
+        document.getElementById('meterPointer').style.left = `${percentage}%`;
+        
+        // Set sentiment class
+        const display = document.querySelector('.sentiment-display');
+        display.classList.add(result.sentiment.toLowerCase());
+        } else {
+        // No results found, redirect back
+        window.location.href = '/';
+        }
     </script>
 </body>
 </html>

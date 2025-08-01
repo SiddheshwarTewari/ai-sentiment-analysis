@@ -153,6 +153,27 @@
                 this.style.boxShadow = '';
             });
         });
+
+
+        document.querySelector('form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const review = document.getElementById('review').value;
+            
+            try {
+                const response = await fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ review })
+                });
+                
+                const result = await response.json();
+                // Store result in localStorage and redirect
+                localStorage.setItem('analysisResult', JSON.stringify(result));
+                window.location.href = '/result.html';
+            } catch (error) {
+                alert('Analysis failed: ' + error.message);
+            }
+            });
     </script>
 </body>
 </html>
