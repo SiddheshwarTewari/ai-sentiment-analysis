@@ -1,10 +1,10 @@
-const Vader = require('vader-sentiment');
+const Vader = require('vader-sentiment-node');
 
 exports.handler = async (event) => {
   try {
     const { review } = JSON.parse(event.body);
     
-    // Using VADER which is excellent for short texts
+    // Get sentiment scores
     const intensity = Vader.SentimentIntensityAnalyzer.polarity_scores(review);
     
     // Convert to -3 to +3 scale (compound ranges from -1 to +1)
@@ -12,6 +12,7 @@ exports.handler = async (event) => {
     
     return {
       statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         review,
         sentiment: score > 0.5 ? 'Positive' : score < -0.5 ? 'Negative' : 'Neutral',
