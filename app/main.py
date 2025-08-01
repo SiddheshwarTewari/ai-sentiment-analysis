@@ -1,10 +1,10 @@
 import os
+import re
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import nltk
-import re
 
 nltk.download('vader_lexicon')
 app = FastAPI()
@@ -13,70 +13,60 @@ app = FastAPI()
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
 
-# Initialize and weaponize VADER
+# Initialize analyzer
 sid = SentimentIntensityAnalyzer()
 
 # Nuclear negative lexicon
 NUCLEAR_NEGATIVE = {
-    'trash': -4.0,
-    'garbage': -4.0,
-    'awful': -3.5,
-    'terrible': -3.5,
-    'horrible': -3.5,
-    'boring': -3.0,
-    'waste': -3.2,
-    'bad': -2.5,
-    'sucks': -3.0,
-    'hate': -3.0,
-    'disappointing': -2.8,
-    'not good': -2.5,
-    'do better': -2.5,
-    'kinda trash': -3.5,
-    'mediocre': -2.0,
-    'poor': -2.5,
-    'lame': -2.7,
-    'dumpster fire': -4.0,
-    'hot garbage': -4.0,
-    'trainwreck': -3.5
+    'aloof': -1.8, 'disconnected': -1.7, 'wooden': -2.0,
+    'did not follow': -2.3, 'plotless': -2.5, 'confusing': -1.8,
+    'emotionless': -2.0, 'miscast': -2.0, 'poorly executed': -2.5,
+    **{word: -3.0 for word in ['trash', 'garbage', 'awful', 'terrible']}
 }
 sid.lexicon.update(NUCLEAR_NEGATIVE)
 
-# Negative phrase patterns
-NEGATIVE_PHRASES = [
-    r'not\s+good',
-    r'kinda\s+trash',
-    r'do\s+better',
-    r'was\s+bad',
-    r'is\s+bad',
-    r'pretty\s+bad',
-    r'not\s+great',
-    r'could\s+be\s+better',
-    r'disappointed',
-    r'waste\s+of\s+time'
+# Contextual phrase patterns
+NEGATIVE_PATTERNS = [
+    (r'\baloof\b.*\bcharacter\b', -1.8),
+    (r'did not follow.*plot', -2.0),
+    (r'poorly\sdeveloped', -2.0),
+    (r'confusing\s.*plot', -2.0),
+    (r'disconnected\s.*character', -1.8)
 ]
 
-def analyze_sentiment_nuclear(text):
+POSITIVE_PATTERNS = [
+    (r'well\sput\stogether', 1.8),
+    (r'followed.*emotions.*well', 1.7),
+    (r'compelling\s.*character', 1.5),
+    (r'cohesive\s.*plot', 1.5)
+]
+
+def analyze_with_context(text):
     text_lower = text.lower()
+    total_score = 0
     
-    # 1. Immediate negative classification for strong phrases
-    for phrase in NEGATIVE_PHRASES:
-        if re.search(phrase, text_lower):
-            return 'Negative', -2.5  # Default strong negative
+    # 1. Check for negative contextual phrases
+    for pattern, score in NEGATIVE_PATTERNS:
+        if re.search(pattern, text_lower):
+            total_score += score
     
-    # 2. Nuclear lexicon check
-    scores = sid.polarity_scores(text)
+    # 2. Check for positive contextual phrases
+    for pattern, score in POSITIVE_PATTERNS:
+        if re.search(pattern, text_lower):
+            total_score += score
     
-    # 3. Ultra-strict rules
-    if scores['neg'] > 0:  # ANY negative words present
-        if scores['neu'] < 0.8:  # Not mostly neutral words
-            return 'Negative', min(-1.0, scores['compound'])
+    # 3. Only use VADER if no strong patterns found
+    if abs(total_score) < 1.0:
+        scores = sid.polarity_scores(text)
+        total_score = scores['compound']
     
-    # 4. Only clearly positive gets positive
-    if scores['compound'] > 0.5:  # Very high positive threshold
-        return 'Positive', scores['compound']
-    
-    # 5. Everything else neutral
-    return 'Neutral', 0.0
+    # 4. Final classification with hysteresis
+    if total_score < -0.3:  # Strict negative threshold
+        return 'Negative', max(-3.0, total_score)
+    elif total_score > 0.5:  # High positive threshold
+        return 'Positive', min(3.0, total_score)
+    else:
+        return 'Neutral', 0.0
 
 @app.get("/")
 async def read_root(request: Request):
@@ -84,7 +74,7 @@ async def read_root(request: Request):
 
 @app.post("/analyze")
 async def analyze_sentiment(request: Request, review: str = Form(...)):
-    sentiment, score = analyze_sentiment_nuclear(review)
+    sentiment, score = analyze_with_context(review)
     return templates.TemplateResponse("result.html", {
         "request": request,
         "review": review,
