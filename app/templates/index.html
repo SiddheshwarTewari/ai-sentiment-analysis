@@ -45,21 +45,42 @@
             background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
         }
         
-        .typing-demo {
-            width: 22ch;
-            animation: typing 2s steps(22), blink 0.5s step-end infinite alternate;
-            white-space: nowrap;
-            overflow: hidden;
-            border-right: 3px solid;
-            font-family: monospace;
+        /* New improved typing animation */
+        .typing-container {
+            height: 2em;
+            display: flex;
+            justify-content: center;
         }
         
+        .typing-animation {
+            font-family: monospace;
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 3px solid var(--primary);
+            animation: 
+                typing 3.5s steps(22, end),
+                blink-caret 0.75s step-end infinite;
+            animation-fill-mode: forwards;
+        }
+
         @keyframes typing {
             from { width: 0 }
+            to { width: 100% }
         }
-        
-        @keyframes blink {
-            50% { border-color: transparent }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--primary) }
+        }
+
+        /* Add fade-in animation for the form */
+        .fade-in {
+            animation: fadeIn 1.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -73,30 +94,27 @@
                             <i class="fas fa-film me-2"></i>CineSense AI
                         </h1>
                         <p class="lead">Advanced movie review sentiment analysis</p>
-                        <div class="typing-demo mb-3">How did you like the movie?</div>
+                        <div class="typing-container">
+                            <p class="typing-animation mb-3">How did you like the movie?</p>
+                        </div>
                     </div>
 
-                    <form action="/analyze" method="post">
+                    <form action="/analyze" method="post" class="fade-in">
                         <div class="mb-4">
                             <label for="review" class="form-label fw-bold">Your Review:</label>
                             <textarea class="form-control p-3" id="review" name="review" rows="5" 
                                       placeholder="Example: 'The cinematography was stunning but the plot felt rushed...'" required></textarea>
                         </div>
                         
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary btn-lg px-4 py-2">
                                 <i class="fas fa-robot me-2"></i>Analyze
                             </button>
-                            
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="detailedMode" checked>
-                                <label class="form-check-label" for="detailedMode">Detailed Analysis</label>
-                            </div>
                         </div>
                     </form>
                 </div>
 
-                <div class="glass-card p-4 text-center">
+                <div class="glass-card p-4 text-center fade-in">
                     <h5 class="mb-3"><i class="fas fa-lightbulb me-2"></i>Tips for Best Results</h5>
                     <div class="d-flex flex-wrap justify-content-center gap-2">
                         <span class="badge bg-primary">Mention specific elements</span>
@@ -110,15 +128,25 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Animation for textarea focus
-        document.getElementById('review').addEventListener('focus', function() {
-            this.style.transform = 'scale(1.02)';
-            this.style.boxShadow = '0 0 15px rgba(106, 17, 203, 0.3)';
-        });
-        
-        document.getElementById('review').addEventListener('blur', function() {
-            this.style.transform = '';
-            this.style.boxShadow = '';
+        // Reset animation on page refresh
+        document.addEventListener('DOMContentLoaded', () => {
+            const typingElement = document.querySelector('.typing-animation');
+            
+            // Reset animation
+            typingElement.style.animation = 'none';
+            void typingElement.offsetWidth; // Trigger reflow
+            typingElement.style.animation = null;
+
+            // Animation for textarea focus
+            document.getElementById('review').addEventListener('focus', function() {
+                this.style.transform = 'scale(1.02)';
+                this.style.boxShadow = '0 0 15px rgba(106, 17, 203, 0.3)';
+            });
+            
+            document.getElementById('review').addEventListener('blur', function() {
+                this.style.transform = '';
+                this.style.boxShadow = '';
+            });
         });
     </script>
 </body>
