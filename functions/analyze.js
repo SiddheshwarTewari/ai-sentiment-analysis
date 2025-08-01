@@ -1,45 +1,27 @@
-const Sentiment = require('sentiment');
-const sentiment = new Sentiment();
+const Vader = require('vader-sentiment');
 
 exports.handler = async (event) => {
-  // Log the incoming request for debugging
-  console.log('Received event:', JSON.stringify(event, null, 2));
-
   try {
-    // Verify the request has a body
-    if (!event.body) {
-      throw new Error('No request body provided');
-    }
-
     const { review } = JSON.parse(event.body);
     
-    if (!review || typeof review !== 'string') {
-      throw new Error('Invalid review text');
-    }
-
-    const result = sentiment.analyze(review);
-    const normalizedScore = Math.min(3, Math.max(-3, result.score / 5));
+    // Using VADER which is excellent for short texts
+    const intensity = Vader.SentimentIntensityAnalyzer.polarity_scores(review);
     
-    const response = {
+    // Convert to -3 to +3 scale (compound ranges from -1 to +1)
+    const score = intensity.compound * 3;
+    
+    return {
       statusCode: 200,
       body: JSON.stringify({
         review,
-        sentiment: result.score > 0 ? "Positive" : result.score < 0 ? "Negative" : "Neutral",
-        score: parseFloat(normalizedScore.toFixed(1))
+        sentiment: score > 0.5 ? 'Positive' : score < -0.5 ? 'Negative' : 'Neutral',
+        score: parseFloat(score.toFixed(1))
       })
     };
-
-    console.log('Returning response:', response);
-    return response;
-
   } catch (error) {
-    console.error('Error:', error.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ 
-        error: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      })
+      body: JSON.stringify({ error: "Analysis failed. Please try again." })
     };
   }
 };

@@ -1,7 +1,6 @@
 {
-  "name": "cinesense-ai",
-  "version": "1.0.0",
   "dependencies": {
-    "sentiment": "^5.0.2"
+    "sentiment-js": "^2.0.0",
+    "vader-sentiment": "^3.0.0"
   }
 }
