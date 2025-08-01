@@ -12,7 +12,6 @@ app = FastAPI()
 # Configure paths
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
-app.mount("/static", StaticFiles(directory=os.path.join(current_dir, "static")), name="static")
 
 # Initialize and weaponize VADER
 sid = SentimentIntensityAnalyzer()
