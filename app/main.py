@@ -8,51 +8,24 @@ import os
 # Initialize app
 app = FastAPI()
 
-# Configure template directory path
+# Configure paths relative to current file
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(current_dir, "templates"))
 
-# Download required NLTK data
-nltk.download('vader_lexicon')
+# Download NLTK data
+nltk.download('vader_lexicon', quiet=True)
 sid = SentimentIntensityAnalyzer()
 
 def analyze_sentiment(text):
-    # Enhanced scoring with aspect detection
     scores = sid.polarity_scores(text)
     compound = scores['compound']
     
-    # Aspect detection
-    aspects = {
-        'dialogue': 0.3, 'character': 0.4, 
-        'plot': 0.3, 'animation': 0.2,
-        'cinematography': 0.2
-    }
-    
-    # Emotion detection
-    emotions = {
-        'fantastic': 0.5, 'amazing': 0.4, 'love': 0.4,
-        'terrible': -0.5, 'boring': -0.4, 'hate': -0.4
-    }
-    
-    # Calculate boosts
-    aspect_boost = sum(
-        weight for word, weight in aspects.items() 
-        if word in text.lower()
-    ) / 2
-    
-    emotion_boost = sum(
-        weight for word, weight in emotions.items()
-        if word in text.lower()
-    ) / 2
+    # Simple aspect detection
+    aspects = ['dialogue', 'character', 'plot', 'animation']
+    aspect_boost = 0.2 if any(word in text.lower() for word in aspects) else 0
     
     # Final score (-3 to 3 scale)
-    final_score = (compound + aspect_boost + emotion_boost) * 3
-    
-    if final_score > 1:
-        return "Positive", round(final_score, 2)
-    elif final_score < -1:
-        return "Negative", round(final_score, 2)
-    return "Neutral", 0.0
+    return (compound + aspect_boost) * 3
 
 @app.get("/")
 async def read_root(request: Request):
@@ -60,10 +33,11 @@ async def read_root(request: Request):
 
 @app.post("/analyze")
 async def analyze_review(request: Request, review: str = Form(...)):
-    sentiment, score = analyze_sentiment(review)
+    score = analyze_sentiment(review)
+    sentiment = "Positive" if score > 1 else "Negative" if score < -1 else "Neutral"
     return templates.TemplateResponse("result.html", {
         "request": request,
         "review": review,
         "sentiment": sentiment,
-        "score": score
+        "score": round(score, 2)
     })
