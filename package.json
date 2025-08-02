@@ -2,10 +2,6 @@
   "name": "cinesense-ai",
   "version": "1.0.0",
   "dependencies": {
-    "vader-sentiment-node": "^1.1.2",
-    "node-fetch": "^2.6.7"
-  },
-  "engines": {
-    "node": ">=16.0.0"
+    "sentiment": "^5.0.2"
   }
 }
